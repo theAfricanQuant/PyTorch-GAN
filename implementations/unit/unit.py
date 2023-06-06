@@ -41,11 +41,11 @@ parser.add_argument("--dim", type=int, default=64, help="number of filters in fi
 opt = parser.parse_args()
 print(opt)
 
-cuda = True if torch.cuda.is_available() else False
+cuda = bool(torch.cuda.is_available())
 
 # Create sample and checkpoint directories
-os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
-os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+os.makedirs(f"images/{opt.dataset_name}", exist_ok=True)
+os.makedirs(f"saved_models/{opt.dataset_name}", exist_ok=True)
 
 # Losses
 criterion_GAN = torch.nn.MSELoss()
@@ -133,14 +133,23 @@ transforms_ = [
 
 # Training data loader
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}",
+        transforms_=transforms_,
+        unaligned=True,
+    ),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,
 )
 # Test data loader
 val_dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True, mode="test"),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}",
+        transforms_=transforms_,
+        unaligned=True,
+        mode="test",
+    ),
     batch_size=5,
     shuffle=True,
     num_workers=1,
@@ -157,13 +166,17 @@ def sample_images(batches_done):
     fake_X1 = G1(Z2)
     fake_X2 = G2(Z1)
     img_sample = torch.cat((X1.data, fake_X2.data, X2.data, fake_X1.data), 0)
-    save_image(img_sample, "images/%s/%s.png" % (opt.dataset_name, batches_done), nrow=5, normalize=True)
+    save_image(
+        img_sample,
+        f"images/{opt.dataset_name}/{batches_done}.png",
+        nrow=5,
+        normalize=True,
+    )
 
 
 def compute_kl(mu):
     mu_2 = torch.pow(mu, 2)
-    loss = torch.mean(mu_2)
-    return loss
+    return torch.mean(mu_2)
 
 
 # ----------

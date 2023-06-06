@@ -36,7 +36,7 @@ parser.add_argument("--sample_interval", type=int, default=500, help="interval b
 opt = parser.parse_args()
 print(opt)
 
-cuda = True if torch.cuda.is_available() else False
+cuda = bool(torch.cuda.is_available())
 
 input_shape = (opt.channels, opt.img_size, opt.img_size)
 
@@ -68,7 +68,11 @@ transforms_lr = [
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
 ]
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_x=transforms_, transforms_lr=transforms_lr),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}",
+        transforms_x=transforms_,
+        transforms_lr=transforms_lr,
+    ),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,

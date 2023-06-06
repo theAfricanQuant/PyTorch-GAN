@@ -12,7 +12,7 @@ class ImageDataset(Dataset):
         self.transform_x = transforms.Compose(transforms_x)
         self.transform_lr = transforms.Compose(transforms_lr)
 
-        self.files = sorted(glob.glob('%s/*.*' % root))
+        self.files = sorted(glob.glob(f'{root}/*.*'))
 
     def __getitem__(self, index):
 

@@ -105,13 +105,7 @@ def calc_gradient_penalty(netD, real_data, generated_data):
 # Weight Initializer
 def initialize_weights(net):
     for m in net.modules():
-        if isinstance(m, nn.Conv2d):
-            m.weight.data.normal_(0, 0.02)
-            m.bias.data.zero_()
-        elif isinstance(m, nn.ConvTranspose2d):
-            m.weight.data.normal_(0, 0.02)
-            m.bias.data.zero_()
-        elif isinstance(m, nn.Linear):
+        if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.Linear)):
             m.weight.data.normal_(0, 0.02)
             m.bias.data.zero_()
 
@@ -135,9 +129,7 @@ class Reshape(nn.Module):
     def extra_repr(self):
             # (Optional)Set the extra information about this module. You can test
             # it by printing an object of this class.
-            return 'shape={}'.format(
-                self.shape
-            )
+        return f'shape={self.shape}'
 
 
 class Generator_CNN(nn.Module):
@@ -157,7 +149,7 @@ class Generator_CNN(nn.Module):
         self.ishape = (128, 7, 7)
         self.iels = int(np.prod(self.ishape))
         self.verbose = verbose
-        
+
         self.model = nn.Sequential(
             # Fully connected layers
             torch.nn.Linear(self.latent_dim + self.n_c, 1024),
@@ -166,7 +158,7 @@ class Generator_CNN(nn.Module):
             torch.nn.Linear(1024, self.iels),
             nn.BatchNorm1d(self.iels),
             nn.LeakyReLU(0.2, inplace=True),
-        
+
             # Reshape to 128 x (7x7)
             Reshape(self.ishape),
 
@@ -174,7 +166,7 @@ class Generator_CNN(nn.Module):
             nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1, bias=True),
             nn.BatchNorm2d(64),
             nn.LeakyReLU(0.2, inplace=True),
-            
+
             nn.ConvTranspose2d(64, 1, 4, stride=2, padding=1, bias=True),
             nn.Sigmoid()
         )
@@ -182,7 +174,7 @@ class Generator_CNN(nn.Module):
         initialize_weights(self)
 
         if self.verbose:
-            print("Setting up {}...\n".format(self.name))
+            print(f"Setting up {self.name}...\n")
             print(self.model)
     
     def forward(self, zn, zc):
@@ -210,17 +202,17 @@ class Encoder_CNN(nn.Module):
         self.iels = int(np.prod(self.cshape))
         self.lshape = (self.iels,)
         self.verbose = verbose
-        
+
         self.model = nn.Sequential(
             # Convolutional layers
             nn.Conv2d(self.channels, 64, 4, stride=2, bias=True),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(64, 128, 4, stride=2, bias=True),
             nn.LeakyReLU(0.2, inplace=True),
-            
+
             # Flatten
             Reshape(self.lshape),
-            
+
             # Fully connected layers
             torch.nn.Linear(self.iels, 1024),
             nn.LeakyReLU(0.2, inplace=True),
@@ -228,9 +220,9 @@ class Encoder_CNN(nn.Module):
         )
 
         initialize_weights(self)
-        
+
         if self.verbose:
-            print("Setting up {}...\n".format(self.name))
+            print(f"Setting up {self.name}...\n")
             print(self.model)
 
     def forward(self, in_feat):
@@ -256,7 +248,7 @@ class Discriminator_CNN(nn.Module):
     # Architecture : (64)4c2s-(128)4c2s_BL-FC1024_BL-FC1_S
     def __init__(self, wass_metric=False, verbose=False):
         super(Discriminator_CNN, self).__init__()
-        
+
         self.name = 'discriminator'
         self.channels = 1
         self.cshape = (128, 5, 5)
@@ -264,23 +256,23 @@ class Discriminator_CNN(nn.Module):
         self.lshape = (self.iels,)
         self.wass = wass_metric
         self.verbose = verbose
-        
+
         self.model = nn.Sequential(
             # Convolutional layers
             nn.Conv2d(self.channels, 64, 4, stride=2, bias=True),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(64, 128, 4, stride=2, bias=True),
             nn.LeakyReLU(0.2, inplace=True),
-            
+
             # Flatten
             Reshape(self.lshape),
-            
+
             # Fully connected layers
             torch.nn.Linear(self.iels, 1024),
             nn.LeakyReLU(0.2, inplace=True),
             torch.nn.Linear(1024, 1),
         )
-        
+
         # If NOT using Wasserstein metric, final Sigmoid
         if (not self.wass):
             self.model = nn.Sequential(self.model, torch.nn.Sigmoid())
@@ -288,13 +280,11 @@ class Discriminator_CNN(nn.Module):
         initialize_weights(self)
 
         if self.verbose:
-            print("Setting up {}...\n".format(self.name))
+            print(f"Setting up {self.name}...\n")
             print(self.model)
 
     def forward(self, img):
-        # Get output
-        validity = self.model(img)
-        return validity
+        return self.model(img)
 
 
 
@@ -323,7 +313,7 @@ wass_metric = args.wass_flag
 
 x_shape = (channels, img_size, img_size)
 
-cuda = True if torch.cuda.is_available() else False
+cuda = bool(torch.cuda.is_available())
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Loss function
@@ -343,7 +333,7 @@ if cuda:
     bce_loss.cuda()
     xe_loss.cuda()
     mse_loss.cuda()
-    
+
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
 # Configure data loader
@@ -395,9 +385,11 @@ c_i = []
 
 # Training loop 
 print('\nBegin training session with %i epochs...\n'%(n_epochs))
+# Set number of examples for cycle calcs
+n_sqrt_samp = 5
 for epoch in range(n_epochs):
     for i, (imgs, itruth_label) in enumerate(dataloader):
-       
+
         # Ensure generator/encoder are trainable
         generator.train()
         encoder.train()
@@ -406,16 +398,16 @@ for epoch in range(n_epochs):
         generator.zero_grad()
         encoder.zero_grad()
         discriminator.zero_grad()
-        
+
         # Configure input
         real_imgs = Variable(imgs.type(Tensor))
 
         # ---------------------------
         #  Train Generator + Encoder
         # ---------------------------
-        
+
         optimizer_GE.zero_grad()
-        
+
         # Sample random latent variables
         zn, zc, zc_idx = sample_z(shape=imgs.shape[0],
                                   latent_dim=latent_dim,
@@ -423,11 +415,11 @@ for epoch in range(n_epochs):
 
         # Generate a batch of images
         gen_imgs = generator(zn, zc)
-        
+
         # Discriminator output from real and generated samples
         D_gen = discriminator(gen_imgs)
         D_real = discriminator(real_imgs)
-        
+
         # Step for Generator & Encoder, n_skip_iter times less than for discriminator
         if (i % n_skip_iter == 0):
             # Encode the generated images
@@ -463,7 +455,7 @@ for epoch in range(n_epochs):
 
             # Wasserstein GAN loss w/gradient penalty
             d_loss = torch.mean(D_real) - torch.mean(D_gen) + grad_penalty
-            
+
         else:
             # Vanilla GAN loss
             fake = Variable(Tensor(gen_imgs.size(0), 1).fill_(0.0), requires_grad=False)
@@ -484,9 +476,7 @@ for epoch in range(n_epochs):
     generator.eval()
     encoder.eval()
 
-    # Set number of examples for cycle calcs
-    n_sqrt_samp = 5
-    n_samp = n_sqrt_samp * n_sqrt_samp
+    n_samp = n_sqrt_samp**2
 
 
     ## Cycle through test real -> enc -> gen
@@ -499,7 +489,7 @@ for epoch in range(n_epochs):
     img_mse_loss = mse_loss(t_imgs, teg_imgs)
     # Save img reco cycle loss
     c_i.append(img_mse_loss.item())
-   
+
 
     ## Cycle through randomly sampled encoding -> generator -> encoder
     zn_samp, zc_samp, zc_samp_idx = sample_z(shape=n_samp,
@@ -518,7 +508,7 @@ for epoch in range(n_epochs):
     # Save latent space cycle losses
     c_zn.append(lat_mse_loss.item())
     c_zc.append(lat_xe_loss.item())
-  
+
     # Save cycled and generated examples!
     r_imgs, i_label = real_imgs.data[:n_samp], itruth_label[:n_samp]
     e_zn, e_zc, e_zc_logits = encoder(r_imgs)
@@ -529,7 +519,7 @@ for epoch in range(n_epochs):
     save_image(gen_imgs_samp.data[:n_samp],
                'images/gen_%06i.png' %(epoch), 
                nrow=n_sqrt_samp, normalize=True)
-    
+
     ## Generate samples for specified classes
     stack_imgs = []
     for idx in range(n_c):
@@ -551,7 +541,7 @@ for epoch in range(n_epochs):
     save_image(stack_imgs,
                'images/gen_classes_%06i.png' %(epoch),
                nrow=n_c, normalize=True)
- 
+
 
     print ("[Epoch %d/%d] \n"\
            "\tModel Losses: [D: %f] [GE: %f]" % (epoch, 
@@ -559,7 +549,7 @@ for epoch in range(n_epochs):
                                                  d_loss.item(),
                                                  ge_loss.item())
           )
-    
+
     print("\tCycle Losses: [x: %f] [z_n: %f] [z_c: %f]"%(img_mse_loss.item(), 
                                                          lat_mse_loss.item(), 
                                                          lat_xe_loss.item())

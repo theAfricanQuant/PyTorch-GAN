@@ -42,12 +42,12 @@ parser.add_argument("--checkpoint_interval", type=int, default=-1, help="interva
 opt = parser.parse_args()
 print(opt)
 
-os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
-os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+os.makedirs(f"images/{opt.dataset_name}", exist_ok=True)
+os.makedirs(f"saved_models/{opt.dataset_name}", exist_ok=True)
 
 img_shape = (opt.channels, opt.img_size, opt.img_size)
 
-cuda = True if torch.cuda.is_available() else False
+cuda = bool(torch.cuda.is_available())
 
 # Loss function
 cycle_loss = torch.nn.L1Loss()
@@ -90,13 +90,15 @@ transforms_ = [
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
 ]
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_),
+    ImageDataset(f"../../data/{opt.dataset_name}", transforms_=transforms_),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,
 )
 val_dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, mode="val", transforms_=transforms_),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}", mode="val", transforms_=transforms_
+    ),
     batch_size=16,
     shuffle=True,
     num_workers=1,
@@ -131,8 +133,7 @@ def compute_gradient_penalty(D, real_samples, fake_samples):
         only_inputs=True,
     )[0]
     gradients = gradients.view(gradients.size(0), -1)
-    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-    return gradient_penalty
+    return ((gradients.norm(2, dim=1) - 1) ** 2).mean()
 
 
 def sample_images(batches_done):
@@ -145,7 +146,12 @@ def sample_images(batches_done):
     fake_A = G_BA(real_B)
     BA = torch.cat((real_B.data, fake_A.data), -2)
     img_sample = torch.cat((AB, BA), 0)
-    save_image(img_sample, "images/%s/%s.png" % (opt.dataset_name, batches_done), nrow=8, normalize=True)
+    save_image(
+        img_sample,
+        f"images/{opt.dataset_name}/{batches_done}.png",
+        nrow=8,
+        normalize=True,
+    )
 
 
 # ----------

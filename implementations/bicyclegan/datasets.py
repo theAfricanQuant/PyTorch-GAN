@@ -18,7 +18,7 @@ class ImageDataset(Dataset):
             ]
         )
 
-        self.files = sorted(glob.glob(os.path.join(root, mode) + "/*.*"))
+        self.files = sorted(glob.glob(f"{os.path.join(root, mode)}/*.*"))
 
     def __getitem__(self, index):
 

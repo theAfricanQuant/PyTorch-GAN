@@ -43,8 +43,8 @@ opt = parser.parse_args()
 print(opt)
 
 # Create sample and checkpoint directories
-os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
-os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+os.makedirs(f"images/{opt.dataset_name}", exist_ok=True)
+os.makedirs(f"saved_models/{opt.dataset_name}", exist_ok=True)
 
 # Losses
 criterion_GAN = torch.nn.MSELoss()
@@ -118,14 +118,23 @@ transforms_ = [
 
 # Training data loader
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}",
+        transforms_=transforms_,
+        unaligned=True,
+    ),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,
 )
 # Test data loader
 val_dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, unaligned=True, mode="test"),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}",
+        transforms_=transforms_,
+        unaligned=True,
+        mode="test",
+    ),
     batch_size=5,
     shuffle=True,
     num_workers=1,
@@ -148,7 +157,11 @@ def sample_images(batches_done):
     fake_B = make_grid(fake_B, nrow=5, normalize=True)
     # Arange images along y-axis
     image_grid = torch.cat((real_A, fake_B, real_B, fake_A), 1)
-    save_image(image_grid, "images/%s/%s.png" % (opt.dataset_name, batches_done), normalize=False)
+    save_image(
+        image_grid,
+        f"images/{opt.dataset_name}/{batches_done}.png",
+        normalize=False,
+    )
 
 
 # ----------

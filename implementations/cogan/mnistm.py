@@ -78,10 +78,7 @@ class MNISTM(data.Dataset):
 
     def __len__(self):
         """Return size of dataset."""
-        if self.train:
-            return len(self.train_data)
-        else:
-            return len(self.test_data)
+        return len(self.train_data) if self.train else len(self.test_data)
 
     def _check_exists(self):
         return os.path.exists(os.path.join(self.root, self.processed_folder, self.training_file)) and os.path.exists(
@@ -105,13 +102,11 @@ class MNISTM(data.Dataset):
             os.makedirs(os.path.join(self.root, self.raw_folder))
             os.makedirs(os.path.join(self.root, self.processed_folder))
         except OSError as e:
-            if e.errno == errno.EEXIST:
-                pass
-            else:
+            if e.errno != errno.EEXIST:
                 raise
 
         # download pkl files
-        print("Downloading " + self.url)
+        print(f"Downloading {self.url}")
         filename = self.url.rpartition("/")[2]
         file_path = os.path.join(self.root, self.raw_folder, filename)
         if not os.path.exists(file_path.replace(".gz", "")):

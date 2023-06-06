@@ -46,8 +46,8 @@ print(opt)
 cuda = torch.cuda.is_available()
 
 # Create sample and checkpoint directories
-os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
-os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+os.makedirs(f"images/{opt.dataset_name}", exist_ok=True)
+os.makedirs(f"saved_models/{opt.dataset_name}", exist_ok=True)
 
 criterion_recon = torch.nn.L1Loss()
 
@@ -122,14 +122,16 @@ transforms_ = [
 ]
 
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_),
+    ImageDataset(f"../../data/{opt.dataset_name}", transforms_=transforms_),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,
 )
 
 val_dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, mode="val"),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}", transforms_=transforms_, mode="val"
+    ),
     batch_size=5,
     shuffle=True,
     num_workers=1,
@@ -151,11 +153,16 @@ def sample_images(batches_done):
         c_code_1, _ = Enc1(X1)
         X12 = Dec2(c_code_1, s_code)
         # Concatenate samples horisontally
-        X12 = torch.cat([x for x in X12.data.cpu()], -1)
+        X12 = torch.cat(list(X12.data.cpu()), -1)
         img_sample = torch.cat((img1, X12), -1).unsqueeze(0)
         # Concatenate with previous samples vertically
         img_samples = img_sample if img_samples is None else torch.cat((img_samples, img_sample), -2)
-    save_image(img_samples, "images/%s/%s.png" % (opt.dataset_name, batches_done), nrow=5, normalize=True)
+    save_image(
+        img_samples,
+        f"images/{opt.dataset_name}/{batches_done}.png",
+        nrow=5,
+        normalize=True,
+    )
 
 
 # ----------

@@ -37,10 +37,7 @@ class GeneratorResNet(nn.Module):
         # First layer
         self.conv1 = nn.Sequential(nn.Conv2d(in_channels, 64, kernel_size=9, stride=1, padding=4), nn.PReLU())
 
-        # Residual blocks
-        res_blocks = []
-        for _ in range(n_residual_blocks):
-            res_blocks.append(ResidualBlock(64))
+        res_blocks = [ResidualBlock(64) for _ in range(n_residual_blocks)]
         self.res_blocks = nn.Sequential(*res_blocks)
 
         # Second conv layer post residual blocks
@@ -48,7 +45,7 @@ class GeneratorResNet(nn.Module):
 
         # Upsampling layers
         upsampling = []
-        for out_features in range(2):
+        for _ in range(2):
             upsampling += [
                 # nn.Upsample(scale_factor=2),
                 nn.Conv2d(64, 256, 3, 1, 1),

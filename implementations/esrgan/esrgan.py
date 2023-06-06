@@ -8,6 +8,7 @@ Instrustion on running the script:
 4. Run the sript using command 'python3 esrgan.py'
 """
 
+
 import argparse
 import os
 import numpy as np
@@ -82,7 +83,7 @@ optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt
 Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.Tensor
 
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, hr_shape=hr_shape),
+    ImageDataset(f"../../data/{opt.dataset_name}", hr_shape=hr_shape),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,

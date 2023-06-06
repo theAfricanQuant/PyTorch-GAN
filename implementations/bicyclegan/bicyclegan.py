@@ -42,10 +42,10 @@ parser.add_argument("--lambda_kl", type=float, default=0.01, help="kullback-leib
 opt = parser.parse_args()
 print(opt)
 
-os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
-os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+os.makedirs(f"images/{opt.dataset_name}", exist_ok=True)
+os.makedirs(f"saved_models/{opt.dataset_name}", exist_ok=True)
 
-cuda = True if torch.cuda.is_available() else False
+cuda = bool(torch.cuda.is_available())
 
 input_shape = (opt.channels, opt.img_height, opt.img_width)
 
@@ -86,13 +86,13 @@ optimizer_D_LR = torch.optim.Adam(D_LR.parameters(), lr=opt.lr, betas=(opt.b1, o
 Tensor = torch.cuda.FloatTensor if cuda else torch.Tensor
 
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, input_shape),
+    ImageDataset(f"../../data/{opt.dataset_name}", input_shape),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,
 )
 val_dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, input_shape, mode="val"),
+    ImageDataset(f"../../data/{opt.dataset_name}", input_shape, mode="val"),
     batch_size=8,
     shuffle=True,
     num_workers=1,
@@ -113,20 +113,24 @@ def sample_images(batches_done):
         # Generate samples
         fake_B = generator(real_A, sampled_z)
         # Concatenate samples horisontally
-        fake_B = torch.cat([x for x in fake_B.data.cpu()], -1)
+        fake_B = torch.cat(list(fake_B.data.cpu()), -1)
         img_sample = torch.cat((img_A, fake_B), -1)
         img_sample = img_sample.view(1, *img_sample.shape)
         # Concatenate with previous samples vertically
         img_samples = img_sample if img_samples is None else torch.cat((img_samples, img_sample), -2)
-    save_image(img_samples, "images/%s/%s.png" % (opt.dataset_name, batches_done), nrow=8, normalize=True)
+    save_image(
+        img_samples,
+        f"images/{opt.dataset_name}/{batches_done}.png",
+        nrow=8,
+        normalize=True,
+    )
     generator.train()
 
 
 def reparameterization(mu, logvar):
     std = torch.exp(logvar / 2)
     sampled_z = Variable(Tensor(np.random.normal(0, 1, (mu.size(0), opt.latent_dim))))
-    z = sampled_z * std + mu
-    return z
+    return sampled_z * std + mu
 
 
 # ----------

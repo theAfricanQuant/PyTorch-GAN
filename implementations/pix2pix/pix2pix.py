@@ -41,10 +41,10 @@ parser.add_argument("--checkpoint_interval", type=int, default=-1, help="interva
 opt = parser.parse_args()
 print(opt)
 
-os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
-os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+os.makedirs(f"images/{opt.dataset_name}", exist_ok=True)
+os.makedirs(f"saved_models/{opt.dataset_name}", exist_ok=True)
 
-cuda = True if torch.cuda.is_available() else False
+cuda = bool(torch.cuda.is_available())
 
 # Loss functions
 criterion_GAN = torch.nn.MSELoss()
@@ -87,14 +87,16 @@ transforms_ = [
 ]
 
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_),
+    ImageDataset(f"../../data/{opt.dataset_name}", transforms_=transforms_),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,
 )
 
 val_dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, mode="val"),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}", transforms_=transforms_, mode="val"
+    ),
     batch_size=10,
     shuffle=True,
     num_workers=1,
@@ -111,7 +113,12 @@ def sample_images(batches_done):
     real_B = Variable(imgs["A"].type(Tensor))
     fake_B = generator(real_A)
     img_sample = torch.cat((real_A.data, fake_B.data, real_B.data), -2)
-    save_image(img_sample, "images/%s/%s.png" % (opt.dataset_name, batches_done), nrow=5, normalize=True)
+    save_image(
+        img_sample,
+        f"images/{opt.dataset_name}/{batches_done}.png",
+        nrow=5,
+        normalize=True,
+    )
 
 
 # ----------

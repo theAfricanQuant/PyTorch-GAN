@@ -113,7 +113,10 @@ train_transforms = [
 
 dataloader = DataLoader(
     CelebADataset(
-        "../../data/%s" % opt.dataset_name, transforms_=train_transforms, mode="train", attributes=opt.selected_attrs
+        f"../../data/{opt.dataset_name}",
+        transforms_=train_transforms,
+        mode="train",
+        attributes=opt.selected_attrs,
     ),
     batch_size=opt.batch_size,
     shuffle=True,
@@ -128,7 +131,10 @@ val_transforms = [
 
 val_dataloader = DataLoader(
     CelebADataset(
-        "../../data/%s" % opt.dataset_name, transforms_=val_transforms, mode="val", attributes=opt.selected_attrs
+        f"../../data/{opt.dataset_name}",
+        transforms_=val_transforms,
+        mode="val",
+        attributes=opt.selected_attrs,
     ),
     batch_size=10,
     shuffle=True,
@@ -157,8 +163,7 @@ def compute_gradient_penalty(D, real_samples, fake_samples):
         only_inputs=True,
     )[0]
     gradients = gradients.view(gradients.size(0), -1)
-    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-    return gradient_penalty
+    return ((gradients.norm(2, dim=1) - 1) ** 2).mean()
 
 
 label_changes = [
@@ -189,12 +194,16 @@ def sample_images(batches_done):
         # Generate translations
         gen_imgs = generator(imgs, labels)
         # Concatenate images by width
-        gen_imgs = torch.cat([x for x in gen_imgs.data], -1)
+        gen_imgs = torch.cat(list(gen_imgs.data), -1)
         img_sample = torch.cat((img.data, gen_imgs), -1)
         # Add as row to generated samples
         img_samples = img_sample if img_samples is None else torch.cat((img_samples, img_sample), -2)
 
-    save_image(img_samples.view(1, *img_samples.shape), "images/%s.png" % batches_done, normalize=True)
+    save_image(
+        img_samples.view(1, *img_samples.shape),
+        f"images/{batches_done}.png",
+        normalize=True,
+    )
 
 
 # ----------

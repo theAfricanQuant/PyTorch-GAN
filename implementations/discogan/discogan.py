@@ -39,8 +39,8 @@ opt = parser.parse_args()
 print(opt)
 
 # Create sample and checkpoint directories
-os.makedirs("images/%s" % opt.dataset_name, exist_ok=True)
-os.makedirs("saved_models/%s" % opt.dataset_name, exist_ok=True)
+os.makedirs(f"images/{opt.dataset_name}", exist_ok=True)
+os.makedirs(f"saved_models/{opt.dataset_name}", exist_ok=True)
 
 # Losses
 adversarial_loss = torch.nn.MSELoss()
@@ -96,13 +96,17 @@ transforms_ = [
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
 ]
 dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, mode="train"),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}", transforms_=transforms_, mode="train"
+    ),
     batch_size=opt.batch_size,
     shuffle=True,
     num_workers=opt.n_cpu,
 )
 val_dataloader = DataLoader(
-    ImageDataset("../../data/%s" % opt.dataset_name, transforms_=transforms_, mode="val"),
+    ImageDataset(
+        f"../../data/{opt.dataset_name}", transforms_=transforms_, mode="val"
+    ),
     batch_size=16,
     shuffle=True,
     num_workers=opt.n_cpu,
@@ -119,7 +123,12 @@ def sample_images(batches_done):
     real_B = Variable(imgs["B"].type(Tensor))
     fake_A = G_BA(real_B)
     img_sample = torch.cat((real_A.data, fake_B.data, real_B.data, fake_A.data), 0)
-    save_image(img_sample, "images/%s/%s.png" % (opt.dataset_name, batches_done), nrow=8, normalize=True)
+    save_image(
+        img_sample,
+        f"images/{opt.dataset_name}/{batches_done}.png",
+        nrow=8,
+        normalize=True,
+    )
 
 
 # ----------
